@@ -15,7 +15,8 @@ from flask import Flask, request, jsonify, send_from_directory
 app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Configure Gemini AI
-genai.configure(api_key="AIzaSyCHtT9TIcRG1ocehahD0keCbAHql7HYuiQ")
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', "AIzaSyCHtT9TIcRG1ocehahD0keCbAHql7HYuiQ")
+genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Gemini Configuration

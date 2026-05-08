@@ -1,9 +1,10 @@
+import os
 import jwt
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db
 
-SECRET_KEY = 'ecotrack-ai-secret-2024'
+SECRET_KEY = os.getenv('SECRET_KEY', 'ecotrack-ai-parth-2026')
 
 def register_user(name, email, password):
     conn = get_db()
