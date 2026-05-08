@@ -9,7 +9,10 @@ import functools
 from google import genai
 from google.genai import types
 
-app = Flask(__name__)
+import os
+from flask import Flask, request, jsonify, send_from_directory
+
+app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Configure Gemini AI (New SDK)
 gemini_client = genai.Client(api_key="AIzaSyCHtT9TIcRG1ocehahD0keCbAHql7HYuiQ")
@@ -51,13 +54,15 @@ def token_required(f):
 
 
 # =========================
-# HOME
+# SERVE FRONTEND
 # =========================
 @app.route('/')
-def home():
-    return jsonify({
-        "message": "🌍 EcoTrack AI Backend Running Successfully"
-    })
+def serve():
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.errorhandler(404)
+def not_found(e):
+    return send_from_directory(app.static_folder, 'index.html')
 
 
 # =========================
