@@ -1,5 +1,7 @@
 # 🌿 EcoTrack AI — Sustainable Future by Parth Valand
 
+### 🚀 Live Demo: [https://ecotrack-ai-3ou4.onrender.com/](https://ecotrack-ai-3ou4.onrender.com/)
+
 EcoTrack AI is a powerful, AI-driven carbon footprint analysis system designed to help users track, analyze, and reduce their daily environmental impact.
 
 ## ✨ Features
