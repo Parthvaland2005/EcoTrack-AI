@@ -66,7 +66,10 @@ def token_required(f):
 # =========================
 @app.route('/')
 def serve():
-    return send_from_directory(app.static_folder, 'index.html')
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except:
+        return jsonify({"status": "EcoTrack AI API is Running 🌿", "message": "Please use the frontend on port 5174"})
 
 @app.errorhandler(404)
 def not_found(e):
