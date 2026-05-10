@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect, useContext } from 'react'
 import axios from 'axios'
 import { AuthContext, LanguageContext } from '../App'
+import ReactMarkdown from 'react-markdown'
+import { motion, AnimatePresence } from 'framer-motion'
 
 function ChatBot() {
   const { token } = useContext(AuthContext)
-  const { language } = useContext(LanguageContext)
+  const { language, t } = useContext(LanguageContext)
 
   const [messages, setMessages] = useState([
     {
       from: 'bot',
-      text:
-        "🌿 Hi! I'm EcoBot, powered by Google Gemini AI. Ask me anything about carbon footprint, emissions, or how to go greener!"
+      text: "🌿 **Welcome to EcoBot AI!**\n\nI'm your personal sustainability assistant. I can help you analyze your carbon footprint, suggest green alternatives, or answer questions about environmental impact. How can I assist you today?"
     }
   ])
 
@@ -29,68 +30,35 @@ function ChatBot() {
 
   // Voice Recognition
   const startListening = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition
-
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       alert('Voice recognition is not supported in this browser.')
       return
     }
 
     const recognition = new SpeechRecognition()
-
-    recognition.lang =
-      language === 'gu'
-        ? 'gu-IN'
-        : language === 'hi'
-          ? 'hi-IN'
-          : 'en-US'
-
+    recognition.lang = language === 'gu' ? 'gu-IN' : language === 'hi' ? 'hi-IN' : 'en-US'
     recognition.interimResults = false
     recognition.maxAlternatives = 1
 
-    recognition.onstart = () => {
-      setIsListening(true)
-    }
-
-    recognition.onend = () => {
-      setIsListening(false)
-    }
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error)
-      setIsListening(false)
-    }
-
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript
-      setInput(transcript)
+      setInput(event.results[0][0].transcript)
     }
-
     recognition.start()
   }
 
-  // Send Message
   const sendMessage = async (overrideInput = '') => {
     const messageText = overrideInput || input
-
     if (!messageText.trim() || isTyping) return
 
-    const userMsg = {
-      from: 'user',
-      text: messageText
-    }
-
+    const userMsg = { from: 'user', text: messageText }
     const updatedHistory = [...messages, userMsg]
-
-    // Add user message
+    
     setMessages(prev => [...prev, userMsg])
-
-    // Clear input
     setInput('')
-
-    // Show typing
     setIsTyping(true)
 
     try {
@@ -98,209 +66,196 @@ function ChatBot() {
         '/api/chat',
         {
           message: messageText,
-          history: updatedHistory.slice(-5),
-          language:
-            language === 'gu'
-              ? 'Gujarati'
-              : language === 'hi'
-                ? 'Hindi'
-                : 'English'
+          history: updatedHistory,
+          language: language === 'gu' ? 'Gujarati' : language === 'hi' ? 'Hindi' : 'English'
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       )
-
-      const botMsg = {
-        from: 'bot',
-        text: res.data.reply
-      }
-
-      setMessages(prev => [...prev, botMsg])
+      setMessages(prev => [...prev, { from: 'bot', text: res.data.reply }])
     } catch (err) {
-      console.error(err)
-
-      const errorText =
-        err.response?.data?.reply ||
-        err.response?.data?.message ||
-        '⚠️ Oops! Backend connection failed.'
-
-      setMessages(prev => [
-        ...prev,
-        {
-          from: 'bot',
-          text: errorText
-        }
-      ])
+      const errorMsg = err.response?.data?.reply || '⚠️ Connection lost. Please try again.'
+      setMessages(prev => [...prev, { from: 'bot', text: errorMsg }])
     } finally {
       setIsTyping(false)
     }
   }
 
-  // Enter key send
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
-
-  // Quick Questions
   const quickQuestions = [
     'How to reduce emissions?',
-    'What is a good footprint?',
-    'Tips for transport?',
-    'How does food affect CO2?'
+    'Carbon footprint tips',
+    'Sustainable diet',
+    'Green energy'
   ]
 
   return (
-    <div className="container" style={{ maxWidth: '800px' }}>
-      <h1 className="fade-in">🤖 EcoBot</h1>
-
-      <p className="subtitle fade-in">
-        AI assistant for all your carbon footprint questions
-      </p>
-
-      <div className="chat-container fade-in">
-        {/* Chat Messages */}
-        <div className="chat-messages">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={
-                msg.from === 'user'
-                  ? 'chat-user'
-                  : 'chat-bot'
-              }
-            >
-              {msg.text}
+    <div className="container" style={{ maxWidth: '1000px', height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+      {/* Professional Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }} 
+        animate={{ opacity: 1, y: 0 }}
+        style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '20px',
+          padding: '0 10px'
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: '1.8rem', margin: 0 }}>EcoBot <span style={{ color: 'var(--primary)', opacity: 0.8 }}>AI</span></h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Sustainable Intelligence</p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ 
+                background: 'var(--primary-glow)', 
+                color: 'var(--primary)', 
+                padding: '6px 14px', 
+                borderRadius: '20px', 
+                fontSize: '0.8rem', 
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                border: '1px solid var(--primary)'
+            }}>
+                <span style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }}></span>
+                Online
             </div>
-          ))}
+        </div>
+      </motion.div>
 
-          {/* Typing animation */}
+      {/* Main Chat Interface */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.99 }} 
+        animate={{ opacity: 1, scale: 1 }}
+        style={{ 
+          flex: 1, 
+          background: 'var(--card-bg)', 
+          borderRadius: '24px', 
+          border: '1px solid var(--card-border)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
+        }}
+      >
+        {/* Messages Area */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <AnimatePresence initial={false}>
+            {messages.map((msg, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                style={{ 
+                  alignSelf: msg.from === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: msg.from === 'user' ? 'flex-end' : 'flex-start'
+                }}
+              >
+                <div style={{ 
+                    padding: '16px 22px', 
+                    borderRadius: msg.from === 'user' ? '24px 24px 4px 24px' : '24px 24px 24px 4px',
+                    background: msg.from === 'user' ? 'linear-gradient(135deg, var(--primary), #10b981)' : 'var(--input-bg)',
+                    color: msg.from === 'user' ? 'white' : 'var(--text)',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                    fontSize: '1rem',
+                    lineHeight: '1.6',
+                    border: msg.from === 'user' ? 'none' : '1px solid var(--card-border)'
+                }}>
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', padding: '0 10px' }}>
+                    {msg.from === 'user' ? 'You' : 'EcoBot'} • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
           {isTyping && (
-            <div className="chat-bot">
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-            </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start' }}>
+              <div style={{ background: 'var(--input-bg)', padding: '12px 20px', borderRadius: '20px', display: 'flex', gap: '5px' }}>
+                <span className="typing-dot" style={{ width: '6px', height: '6px' }}></span>
+                <span className="typing-dot" style={{ width: '6px', height: '6px' }}></span>
+                <span className="typing-dot" style={{ width: '6px', height: '6px' }}></span>
+              </div>
+            </motion.div>
           )}
-
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Questions */}
-        <div
-          style={{
-            padding: '0 20px',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '8px',
-            marginBottom: '10px'
-          }}
-        >
-          {quickQuestions.map((q, i) => (
-            <button
-              key={i}
-              onClick={() => sendMessage(q)}
-              style={{
-                width: 'auto',
-                padding: '6px 14px',
-                marginTop: 0,
-                background: 'var(--primary-glow)',
-                border: '1px solid var(--card-border)',
-                color: 'var(--primary)',
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                borderRadius: '999px',
-                boxShadow: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              {q}
-            </button>
-          ))}
+        {/* Action Bar (Quick Replies) */}
+        <div style={{ padding: '0 25px 15px', display: 'flex', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {quickQuestions.map((q, i) => (
+                <button 
+                    key={i} 
+                    onClick={() => sendMessage(q)}
+                    style={{ 
+                        width: 'auto', 
+                        whiteSpace: 'nowrap', 
+                        padding: '8px 18px', 
+                        background: 'transparent', 
+                        border: '1px solid var(--card-border)', 
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        borderRadius: '12px',
+                        marginTop: 0
+                    }}
+                >
+                    {q}
+                </button>
+            ))}
         </div>
 
-        {/* Input Area */}
-        <div className="chat-input-area">
-          <div className="chat-input-wrapper">
+        {/* Professional Input Area */}
+        <div style={{ padding: '20px 25px 30px', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid var(--card-border)' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            background: 'var(--input-bg)', 
+            borderRadius: '18px', 
+            padding: '8px 12px', 
+            border: '1px solid var(--card-border)',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
+          }}>
+            <button 
+                onClick={startListening}
+                style={{ 
+                    width: '44px', height: '44px', borderRadius: '12px', background: isListening ? 'var(--danger)' : 'transparent',
+                    color: isListening ? 'white' : 'var(--text-muted)', border: 'none', padding: 0, margin: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+            >
+                <i className={`bi ${isListening ? 'bi-mic-fill' : 'bi-mic'}`} style={{ fontSize: '1.2rem' }}></i>
+            </button>
             <input
               type="text"
-              placeholder={
-                isListening
-                  ? 'Listening...'
-                  : 'Message EcoBot...'
-              }
+              placeholder={isListening ? t.listening : t.message_placeholder}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              style={{ flex: 1, border: 'none', background: 'transparent', padding: '0 15px', fontSize: '1rem', marginTop: 0 }}
             />
-
-            {/* Mic Button */}
-            <button
-              onClick={startListening}
-              className={`mic-btn ${isListening ? 'active' : ''
-                }`}
-              title="Voice Input"
-            >
-              <i
-                className={`bi ${isListening
-                    ? 'bi-mic-fill'
-                    : 'bi-mic'
-                  }`}
-                style={{ fontSize: '1.2rem' }}
-              ></i>
-            </button>
-
-            {/* Send Button */}
             <button
               onClick={() => sendMessage()}
-              className="send-btn"
               disabled={isTyping || !input.trim()}
-              title="Send Message"
+              style={{ 
+                width: '44px', height: '44px', borderRadius: '12px', background: 'var(--primary)',
+                color: 'white', border: 'none', padding: 0, margin: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 12px var(--primary-glow)'
+              }}
             >
-              <i
-                className="bi bi-arrow-up-short"
-                style={{ fontSize: '1.8rem' }}
-              ></i>
+              <i className="bi bi-send-fill" style={{ fontSize: '1.1rem' }}></i>
             </button>
           </div>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '12px', opacity: 0.6 }}>
+            EcoBot AI can make mistakes. Consider checking important information.
+          </p>
         </div>
-      </div>
-
-      {/* Listening Popup */}
-      {isListening && (
-        <div
-          className="fade-in"
-          style={{
-            position: 'fixed',
-            top: '30px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#ef4444',
-            color: 'white',
-            padding: '12px 28px',
-            borderRadius: '999px',
-            fontWeight: '700',
-            boxShadow:
-              '0 8px 30px rgba(239, 68, 68, 0.4)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}
-        >
-          <span
-            className="typing-dot"
-            style={{ background: 'white' }}
-          ></span>
-
-          EcoBot is listening...
-        </div>
-      )}
+      </motion.div>
     </div>
   )
 }

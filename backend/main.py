@@ -16,18 +16,14 @@ from google.genai import types
 app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Configure Gemini AI
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-client = genai.Client(api_key=GEMINI_API_KEY)
-
-# AI Generation Config
-generation_config = types.GenerateContentConfig(
-    temperature=0.7,
-    top_p=0.95,
-    top_k=64,
-    max_output_tokens=1000,
-)
-
 system_instruction = "You are EcoTrack AI, a brilliant and friendly assistant. While your expertise is in sustainability and carbon footprint reduction, you can answer any question politely. Always try to relate general topics back to environmental impact if possible. Keep answers concise and use emojis! 🌿✨"
+
+# Initialize Gemini Client with safety check
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY not found in environment variables!")
+
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # Secure CORS (Allow All Origins so anyone can use it)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -35,10 +31,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # Initialize DB
 init_db()
 
-
-# =========================
-# TOKEN AUTH DECORATOR
-# =========================
 def token_required(f):
     @functools.wraps(f)
     def decorated(*args, **kwargs):
@@ -60,25 +52,24 @@ def token_required(f):
 
     return decorated
 
-
-# =========================
-# SERVE FRONTEND
-# =========================
 @app.route('/')
 def serve():
     try:
-        return send_from_directory(app.static_folder, 'index.html')
+        if os.path.exists(os.path.join(app.static_folder, 'index.html')):
+            return send_from_directory(app.static_folder, 'index.html')
+        raise FileNotFoundError
     except:
-        return jsonify({"status": "EcoTrack AI API is Running 🌿", "message": "Please use the frontend on port 5174"})
+        return jsonify({
+            "status": "EcoTrack AI API is Running 🌿",
+            "message": "Backend is active. If you are developing, ensure frontend is running on its own port (usually 5173/5174)."
+        })
 
 @app.errorhandler(404)
 def not_found(e):
     return send_from_directory(app.static_folder, 'index.html')
 
 
-# =========================
-# REGISTER
-# =========================
+
 @app.route('/api/register', methods=['POST'])
 def register():
 
@@ -107,10 +98,6 @@ def register():
         'user': user
     })
 
-
-# =========================
-# LOGIN
-# =========================
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -131,10 +118,6 @@ def reset_pwd():
         return jsonify({'message': error}), 400
     return jsonify({'message': 'Password reset successfully'})
 
-
-# =========================
-# CALCULATE EMISSION
-# =========================
 @app.route('/api/calculate', methods=['POST'])
 @token_required
 def calculate(user_data):
@@ -154,9 +137,7 @@ def calculate(user_data):
     food_type = data.get('food_type', 'veg')
     vehicle_type = data.get('vehicle_type', 'car')
 
-    # =========================
-    # VALIDATION
-    # =========================
+    
     if transport_distance < 0:
         return jsonify({
             "message": "Invalid transport distance"
@@ -172,9 +153,6 @@ def calculate(user_data):
             "message": "Invalid fuel usage"
         }), 400
 
-    # =========================
-    # VEHICLE EMISSION
-    # =========================
     vehicle_emission_factor = {
         "car": 0.21,
         "bike": 0.12,
@@ -187,15 +165,9 @@ def calculate(user_data):
         vehicle_emission_factor.get(vehicle_type, 0.21)
     )
 
-    # =========================
-    # ELECTRICITY & FUEL
-    # =========================
     electricity_emission = electricity_usage * 0.82
     fuel_emission = fuel_usage * 2.3
 
-    # =========================
-    # FOOD EMISSION
-    # =========================
     food_emissions = {
         "veg": 2,
         "non-veg": 5,
@@ -205,9 +177,6 @@ def calculate(user_data):
 
     food_emission = food_emissions.get(food_type, 2)
 
-    # =========================
-    # TOTAL
-    # =========================
     total_emission = (
         transport_emission +
         electricity_emission +
@@ -215,22 +184,13 @@ def calculate(user_data):
         food_emission
     )
 
-    # =========================
-    # ML PREDICTION
-    # =========================
     prediction = predict_emission(
         transport_distance,
         electricity_usage
     )
 
-    # =========================
-    # ECO SCORE
-    # =========================
     eco_score = max(0, 100 - int(total_emission * 2))
 
-    # =========================
-    # ECO BADGE
-    # =========================
     if eco_score >= 80:
         eco_badge = "🌱 Eco Hero"
 
@@ -243,9 +203,6 @@ def calculate(user_data):
     else:
         eco_badge = "⚠️ Needs Improvement"
 
-    # =========================
-    # GRADE
-    # =========================
     if total_emission <= 5:
         grade = 'A'
         grade_label = 'Excellent'
@@ -266,9 +223,6 @@ def calculate(user_data):
         grade = 'F'
         grade_label = 'Critical'
 
-    # =========================
-    # HIGHEST SOURCE
-    # =========================
     emissions_map = {
         'Transport': transport_emission,
         'Electricity': electricity_emission,
@@ -281,9 +235,6 @@ def calculate(user_data):
         key=emissions_map.get
     )
 
-    # =========================
-    # SMART TIPS
-    # =========================
     tips_map = {
         'Transport': '🚗 Use public transport or EV vehicles.',
         'Electricity': '⚡ Switch off unused devices.',
@@ -293,9 +244,6 @@ def calculate(user_data):
 
     tip = tips_map[highest_source]
 
-    # =========================
-    # AI SUGGESTION
-    # =========================
     if highest_source == "Transport" and transport_distance > 50:
         suggestion = (
             "🚇 Long travel detected. "
@@ -318,9 +266,6 @@ def calculate(user_data):
             "🥗 Sustainable food habits can reduce emissions."
         )
 
-    # =========================
-    # SAVE TO DATABASE
-    # =========================
     conn = get_db()
 
     conn.execute('''
@@ -369,11 +314,6 @@ def calculate(user_data):
         suggestion
     ))
 
-    # =========================
-    # UPDATE USER POINTS
-    # =========================
-    # Give points based on how good the eco_score is (0-100)
-    # Higher score = More points
     points_earned = int(eco_score / 10)
     if points_earned > 0:
         conn.execute('UPDATE users SET eco_points = eco_points + ? WHERE id = ?', (points_earned, user_id))
@@ -381,9 +321,6 @@ def calculate(user_data):
     conn.commit()
     conn.close()
 
-    # =========================
-    # RESPONSE
-    # =========================
     return jsonify({
 
         "name": user_data['name'],
@@ -422,10 +359,6 @@ def calculate(user_data):
         "predicted_future_emission": prediction
     })
 
-
-# =========================
-# HISTORY
-# =========================
 @app.route('/api/history', methods=['GET'])
 @token_required
 def get_history(user_data):
@@ -451,10 +384,6 @@ def get_history(user_data):
         for log in logs
     ])
 
-
-# =========================
-# LEADERBOARD
-# =========================
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     conn = get_db()
@@ -464,10 +393,6 @@ def get_leaderboard():
     conn.close()
     return jsonify([dict(row) for row in rows])
 
-
-# =========================
-# NEWS FEED
-# =========================
 @app.route('/api/news', methods=['GET'])
 @functools.lru_cache(maxsize=32)
 def get_news():
@@ -479,10 +404,6 @@ def get_news():
     ]
     return jsonify(news)
 
-
-# =========================
-# USER STATS & POINTS
-# =========================
 @app.route('/api/user-stats', methods=['GET'])
 @token_required
 def get_user_stats(user_data):
@@ -504,13 +425,12 @@ def claim_points(user_data):
     conn.close()
     return jsonify({"success": True, "points_added": points})
 
-
-# =========================
-# AI CHAT
-# =========================
 @app.route('/api/chat', methods=['POST'])
 @token_required
 def ai_chat(user_data):
+    if not client:
+        return jsonify({"reply": "AI service is currently unavailable. Please check API configuration."}), 503
+
     data = request.json
     message = data.get('message', '')
     history = data.get('history', []) 
@@ -531,36 +451,46 @@ def ai_chat(user_data):
     context = ""
     if recent_logs:
         log_list = [f"{l['created_at']}: {l['total_emission']}kg ({l['eco_badge']})" for l in recent_logs]
-        context = f"\n\n[USER PERSONAL DATA: Recent footprint history: {', '.join(log_list)}.]"
+        context = f" User's recent carbon footprint history: {', '.join(log_list)}."
 
-    lang_instruction = f"\n\n[IMPORTANT: The user's preferred language is {language}. Please respond primarily in {language} unless asked otherwise.]"
+    # Language and context instructions
+    final_system_instruction = f"{system_instruction}{context} Respond primarily in {language}."
 
     try:
-        # Combine everything for the final prompt
-        full_prompt = system_instruction + context + lang_instruction + "\n\nUser Message: " + message
-        
-        # Prepare contents with history
+        # Prepare chat history for Gemini
         contents = []
-        for h in history[-6:]: # Last 6 messages
-            contents.append({"role": h["from"] == "user" and "user" or "model", "parts": [{"text": h["text"]}]})
+        # Filter history to avoid duplicates and ensure alternating roles
+        # Note: ChatBot.jsx sends history including the current message, so we slice it
+        for h in history[:-1]: # Exclude the last message which is the current one
+            role = "user" if h.get("from") == "user" else "model"
+            contents.append({"role": role, "parts": [{"text": h.get("text", "")}]})
         
-        # Add current message
-        contents.append({"role": "user", "parts": [{"text": full_prompt}]})
+        # Add current user message
+        contents.append({"role": "user", "parts": [{"text": message}]})
+
+        # Update config with system instruction
+        config = types.GenerateContentConfig(
+            temperature=0.7,
+            top_p=0.95,
+            top_k=64,
+            max_output_tokens=1000,
+            system_instruction=final_system_instruction
+        )
 
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite',
+            model='gemini-flash-latest',
             contents=contents,
-            config=generation_config
+            config=config
         )
         return jsonify({"reply": response.text})
     except Exception as e:
-        print(f"Gemini Error: {e}")
-        return jsonify({"reply": "Sorry, my AI brain is currently resting.", "error": str(e)}), 500
+        error_detail = str(e)
+        print(f"Gemini Error: {error_detail}")
+        return jsonify({
+            "reply": f"⚠️ Gemini Error: {error_detail}",
+            "error": error_detail
+        }), 500
 
-
-# =========================
-# ANALYTICS
-# =========================
 @app.route('/api/analytics', methods=['GET'])
 @token_required
 def analytics(user_data):
@@ -619,8 +549,5 @@ def analytics(user_data):
     })
 
 
-# =========================
-# MAIN
-# =========================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=False)
+    app.run(host='0.0.0.0', port=5001, debug=True)
