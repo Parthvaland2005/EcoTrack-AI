@@ -1,15 +1,18 @@
 # pyrefly: ignore [missing-import]
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from carbon_model import predict_emission
 from database import init_db, get_db
 from auth import register_user, login_user, verify_token, reset_password
 import functools
 from google import genai
-
+from google.genai import types
 import os
-from flask import Flask, request, jsonify, send_from_directory
+from dotenv import load_dotenv
+
+# Load Environment Variables
+load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
@@ -17,13 +20,13 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', "AIzaSyCHtT9TIcRG1ocehahD0keCbAHql7HYuiQ")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Gemini Configuration
-generation_config = {
-  "temperature": 0.7,
-  "top_p": 0.95,
-  "top_k": 64,
-  "max_output_tokens": 8192,
-}
+# AI Generation Configuration
+generation_config = types.GenerateContentConfig(
+    temperature=0.7,
+    top_p=0.95,
+    top_k=64,
+    max_output_tokens=1024,
+)
 
 system_instruction = "You are EcoTrack AI, a brilliant and friendly assistant. While your expertise is in sustainability and carbon footprint reduction, you can answer any question politely. Always try to relate general topics back to environmental impact if possible. Keep answers concise and use emojis! 🌿✨"
 
@@ -529,7 +532,8 @@ def ai_chat(user_data):
     try:
         response = client.models.generate_content(
             model='gemini-1.5-flash',
-            contents=system_instruction + context + "\n\nUser Message: " + message
+            contents=system_instruction + context + "\n\nUser Message: " + message,
+            config=generation_config
         )
         return jsonify({"reply": response.text})
     except Exception as e:
@@ -561,6 +565,10 @@ def analytics(user_data):
 
     if not logs:
         return jsonify({
+            "total_records": 0,
+            "average_emission": 0,
+            "highest_emission": 0,
+            "lowest_emission": 0,
             "message": "No data found"
         })
 

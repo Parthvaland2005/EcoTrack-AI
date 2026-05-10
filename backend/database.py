@@ -15,10 +15,10 @@ def get_db():
 
     conn.row_factory = sqlite3.Row
 
-    # ENABLE FOREIGN KEYS
+    
     conn.execute('PRAGMA foreign_keys = ON')
 
-    # ENABLE WAL MODE FOR PERFORMANCE
+
     conn.execute('PRAGMA journal_mode = WAL')
     conn.execute('PRAGMA synchronous = NORMAL')
 
