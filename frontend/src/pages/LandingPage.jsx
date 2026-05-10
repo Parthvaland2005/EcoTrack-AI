@@ -17,90 +17,109 @@ function LandingPage() {
   return (
     <div className="landing-container">
       {/* Hero Section */}
-      <section className="hero" style={{ textAlign: 'center', padding: '100px 20px', background: 'var(--primary-glow)', borderRadius: '0 0 50px 50px' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <h1 style={{ fontSize: '3.5rem', marginBottom: '20px', color: 'var(--primary)' }}>
-            Track Your Footprint, <br />
-            <span style={{ color: 'var(--text)' }}>Save the Planet.</span>
-          </h1>
-          <p style={{ fontSize: '1.2rem', maxWidth: '700px', margin: '0 auto 40px', color: 'var(--text-muted)' }}>
-            EcoTrack AI helps you measure, analyze, and reduce your carbon footprint with the power of Artificial Intelligence.
-          </p>
-          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '20px' }}>
-            <Link 
-              to={user ? "/calculator" : "/signup"} 
-              style={{ 
-                padding: '16px 45px', 
-                fontSize: '1.2rem', 
-                fontWeight: '700',
-                color: '#ffffff',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                textDecoration: 'none', 
-                borderRadius: '50px',
-                boxShadow: '0 8px 25px rgba(16, 185, 129, 0.4)',
-                border: '2px solid rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(16, 185, 129, 0.6)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.4)'; }}
-            >
-              {user ? (
-                <>🧮 Go to Calculator</>
-              ) : (
-                <>🚀 Get Started for Free</>
-              )}
-            </Link>
-            {!user && (
-              <Link 
-                to="/login" 
-                style={{ 
-                  padding: '16px 45px', 
-                  fontSize: '1.2rem', 
-                  fontWeight: '600',
-                  color: 'var(--text)', 
-                  textDecoration: 'none', 
-                  border: '2px solid var(--card-border)', 
-                  borderRadius: '50px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'background 0.3s ease'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-              >
-                Login
+      <section className="hero" style={{ padding: '80px 20px', background: 'var(--primary-glow)', borderRadius: '0 0 50px 50px' }}>
+        <div className="hero-wrapper">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            style={{ flex: '1', minWidth: '300px' }}
+          >
+            <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', marginBottom: '20px', color: 'var(--primary)', lineHeight: '1.1' }}>
+              Track Your Footprint, <br />
+              <span style={{ color: 'var(--text)' }}>Save the Planet.</span>
+            </h1>
+            <p style={{ fontSize: '1.2rem', maxWidth: '600px', marginBottom: '40px', color: 'var(--text-muted)' }}>
+              EcoTrack AI helps you measure, analyze, and reduce your carbon footprint with the power of Artificial Intelligence.
+            </p>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <Link to={user ? "/calculator" : "/signup"} className="btn-primary">
+                {user ? <>🧮 Go to Calculator</> : <>🚀 Get Started for Free</>}
               </Link>
-            )}
-          </div>
-        </motion.div>
+              {!user && (
+                <Link to="/login" className="btn-secondary">
+                  Login
+                </Link>
+              )}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
+            className="hero-visual"
+          >
+            <div className="hero-glow-ring"></div>
+            <div className="hero-glow-ring-inner"></div>
+            <div className="hero-globe">🌍</div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Global Impact Stats Banner */}
+      <motion.section 
+        className="stats-banner"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+      >
+        <div className="stat-item">
+          <div className="stat-num">50,000+</div>
+          <div style={{ color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>kg CO₂ Tracked</div>
+        </div>
+        <div className="stat-item">
+          <div className="stat-num">10,000+</div>
+          <div style={{ color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Eco Warriors</div>
+        </div>
+        <div className="stat-item">
+          <div className="stat-num">1,000+</div>
+          <div style={{ color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Trees Saved (Est.)</div>
+        </div>
+      </motion.section>
+
+      {/* How it Works Section */}
+      <section className="container" style={{ padding: '80px 20px' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '10px', fontSize: '2.5rem' }}>How It Works</h2>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '40px' }}>Three simple steps to a greener lifestyle.</p>
+        
+        <div className="how-it-works-grid">
+          <motion.div className="how-step" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
+            <div className="step-number">1</div>
+            <h3>Track Habits</h3>
+            <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>Input your daily transport, food, and energy usage into our smart calculator.</p>
+          </motion.div>
+          <motion.div className="how-step" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
+            <div className="step-number">2</div>
+            <h3>AI Analysis</h3>
+            <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>Our AI models instantly calculate your footprint and provide personalized tips.</p>
+          </motion.div>
+          <motion.div className="how-step" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}>
+            <div className="step-number">3</div>
+            <h3>Earn Rewards</h3>
+            <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>Reduce your emissions, climb the leaderboard, and earn Eco Points!</p>
+          </motion.div>
+        </div>
       </section>
 
       {/* Features Grid */}
-      <section className="container" style={{ padding: '80px 20px' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '50px' }}>Why Choose EcoTrack AI?</h2>
+      <section className="container" style={{ padding: '40px 20px 80px' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '50px', fontSize: '2.5rem' }}>Features Designed for You</h2>
         <div className="grid">
           {features.map((f, i) => (
             <motion.div 
               key={i}
-              className="card"
+              className="feature-card"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              style={{ padding: '30px', textAlign: 'center' }}
             >
-              <div style={{ fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '15px' }}>
+              <div style={{ fontSize: '2.8rem', color: 'var(--primary)', marginBottom: '15px' }}>
                 <i className={`bi ${f.icon}`}></i>
               </div>
-              <h3 style={{ marginBottom: '10px' }}>{f.title}</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{f.desc}</p>
+              <h3 style={{ marginBottom: '10px', fontSize: '1.3rem' }}>{f.title}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{f.desc}</p>
             </motion.div>
           ))}
         </div>

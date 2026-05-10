@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts'
 import EcoChallenges from '../components/EcoChallenges'
@@ -38,7 +38,7 @@ function Dashboard() {
       // Fetch history first
       const histRes = await axios.get('/api/history', { headers: { Authorization: `Bearer ${token}` } })
       setHistory(histRes.data || [])
-      
+
       // Fetch stats independently so it doesn't break history if it fails
       try {
         const statsRes = await axios.get('/api/user-stats', { headers: { Authorization: `Bearer ${token}` } })
@@ -81,8 +81,15 @@ function Dashboard() {
     )
   }
 
+  const formatDate = (dateStr, index) => {
+    if (!dateStr) return `#${index}`
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return `#${index}`
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   const lineData = history.slice(0, 10).reverse().map((log, i) => ({
-    day: `#${i + 1}`,
+    day: formatDate(log.created_at, i + 1),
     Emission: parseFloat(log.total_emission)
   }))
 
@@ -95,7 +102,7 @@ function Dashboard() {
   ]
 
   const barData = history.slice(0, 7).reverse().map((log, i) => ({
-    name: `#${i + 1}`,
+    name: formatDate(log.created_at, i + 1),
     Transport: parseFloat(log.transport_emission) || 0,
     Electricity: parseFloat(log.electricity_emission) || 0,
     Fuel: parseFloat(log.fuel_emission) || 0,
@@ -110,34 +117,35 @@ function Dashboard() {
     ? parseFloat(history[0].total_emission) < parseFloat(history[1].total_emission) ? '📉 Improving' : '📈 Increasing'
     : '—'
 
-  const handleExportTXT = () => {
+  const handleExportCSV = () => {
     if (!history || history.length === 0) {
       alert('No data available')
       return
     }
 
-    let txtContent = "=========================================\n"
-    txtContent += "       ECOTRACK AI - EMISSION HISTORY    \n"
-    txtContent += "=========================================\n\n"
+    const headers = ["Date", "Transport (kg)", "Electricity (kg)", "Fuel (kg)", "Food (kg)", "Total Emission (kg)", "Eco Score", "Badge"]
+    
+    const rows = history.map(row => [
+      row.created_at || 'N/A',
+      row.transport_emission || 0,
+      row.electricity_emission || 0,
+      row.fuel_emission || 0,
+      row.food_emission || 0,
+      row.total_emission || 0,
+      row.eco_score || 0,
+      `"${row.eco_badge || 'N/A'}"` // Quotes to handle emojis properly
+    ])
 
-    history.forEach((row, index) => {
-      txtContent += `[ Entry #${history.length - index} ]\n`
-      txtContent += `Date:        ${row.created_at || 'N/A'}\n`
-      txtContent += `Transport:   ${row.transport_emission || 0} kg CO2\n`
-      txtContent += `Electricity: ${row.electricity_emission || 0} kg CO2\n`
-      txtContent += `Fuel:        ${row.fuel_emission || 0} kg CO2\n`
-      txtContent += `Food:        ${row.food_emission || 0} kg CO2\n`
-      txtContent += `Total:       ${row.total_emission || 0} kg CO2\n`
-      txtContent += `Eco Score:   ${row.eco_score || 0}\n`
-      txtContent += `Badge:       ${row.eco_badge || 'N/A'}\n`
-      txtContent += "-----------------------------------------\n"
-    })
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(e => e.join(","))
+    ].join("\n")
 
-    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'EcoTrack_History.txt'
+    link.download = 'EcoTrack_History.csv'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -151,12 +159,12 @@ function Dashboard() {
           <h1 className="fade-in">{t.dashboard} 📊</h1>
           <p className="subtitle fade-in">Your carbon footprint analytics & history</p>
         </div>
-        <button 
-          onClick={handleExportTXT}
+        <button
+          onClick={handleExportCSV}
           className="fade-in"
           style={{ width: 'auto', marginTop: '0', padding: '10px 18px', background: 'var(--card-bg)', border: '1px solid var(--primary)', color: 'var(--primary)' }}
         >
-          📄 Export Data (TXT)
+          📄 Export Data (CSV)
         </button>
       </div>
 
@@ -166,17 +174,17 @@ function Dashboard() {
         </h3>
         <p style={{ fontSize: '1.05rem', lineHeight: '1.6' }}>
           Hello <strong>{userStats.name || 'Eco-Warrior'}</strong>! {
-            history.length > 1 
-            ? (parseFloat(history[0].total_emission) < parseFloat(history[1].total_emission)
-              ? "Awesome progress! Your carbon footprint is trending downwards. You've successfully reduced your impact compared to your last entry. Keep up the green habits! 🌱"
-              : "Your emissions have increased slightly. Don't worry! Try looking at your transport or electricity usage for ways to save. Every small step counts! 📉")
-            : "Welcome to your first analysis! Use the charts below to track your journey. Aim to keep your 'Total Emission' bars as short as possible! 🌍"
+            history.length > 1
+              ? (parseFloat(history[0].total_emission) < parseFloat(history[1].total_emission)
+                ? "Awesome progress! Your carbon footprint is trending downwards. You've successfully reduced your impact compared to your last entry. Keep up the green habits! 🌱"
+                : "Your emissions have increased slightly. Don't worry! Try looking at your transport or electricity usage for ways to save. Every small step counts! 📉")
+              : "Welcome to your first analysis! Use the charts below to track your journey. Aim to keep your 'Total Emission' bars as short as possible! 🌍"
           }
         </p>
       </div>
 
       {/* Summary Stats */}
-      <div className="grid fade-in">
+      <div className="grid fade-in" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
         <div className="stat-card">
           <div className="stat-label">{t.total_entries}</div>
           <div className="stat-value" style={{ color: '#22c55e' }}>{history.length}</div>
@@ -193,28 +201,43 @@ function Dashboard() {
           <div className="stat-label">{t.trend}</div>
           <div className="stat-value" style={{ fontSize: '1.2rem' }}>{trend}</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-label">Best (Lowest)</div>
+          <div className="stat-value" style={{ color: '#22c55e' }}>{best.toFixed(1)} <span style={{ fontSize: '1rem' }}>kg</span></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Worst (Highest)</div>
+          <div className="stat-value" style={{ color: '#ef4444' }}>{worst.toFixed(1)} <span style={{ fontSize: '1rem' }}>kg</span></div>
+        </div>
       </div>
 
       <WeatherWidget />
 
-      {/* Line Chart */}
+      {/* Area Chart */}
       <div className="card fade-in">
         <h2 style={{ marginBottom: '20px' }}>📈 Emission Trend</h2>
         <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={lineData}>
+          <AreaChart data={lineData}>
+            <defs>
+              <linearGradient id="colorEmission" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4}/>
+                <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
             <XAxis dataKey="day" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
             <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
             <Tooltip content={<CustomTooltip />} />
-            <Line
+            <Area
               type="monotone"
               dataKey="Emission"
               stroke="#22c55e"
               strokeWidth={3}
-              dot={{ r: 5, fill: '#22c55e', strokeWidth: 2, stroke: '#fff' }}
-              activeDot={{ r: 7 }}
+              fillOpacity={1}
+              fill="url(#colorEmission)"
+              activeDot={{ r: 7, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
 

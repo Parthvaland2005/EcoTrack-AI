@@ -76,7 +76,7 @@ def not_found(e):
 # =========================
 # REGISTER
 # =========================
-@app.route('/register', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
 def register():
 
     data = request.json
@@ -108,7 +108,7 @@ def register():
 # =========================
 # LOGIN
 # =========================
-@app.route('/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
     token, user, error = login_user(data['email'], data['password'])
@@ -116,7 +116,7 @@ def login():
         return jsonify({'message': error}), 400
     return jsonify({'token': token, 'user': user})
 
-@app.route('/reset-password', methods=['POST'])
+@app.route('/api/reset-password', methods=['POST'])
 def reset_pwd():
     data = request.json
     email = data.get('email')
@@ -132,7 +132,7 @@ def reset_pwd():
 # =========================
 # CALCULATE EMISSION
 # =========================
-@app.route('/calculate', methods=['POST'])
+@app.route('/api/calculate', methods=['POST'])
 @token_required
 def calculate(user_data):
 
@@ -366,6 +366,15 @@ def calculate(user_data):
         suggestion
     ))
 
+    # =========================
+    # UPDATE USER POINTS
+    # =========================
+    # Give points based on how good the eco_score is (0-100)
+    # Higher score = More points
+    points_earned = int(eco_score / 10)
+    if points_earned > 0:
+        conn.execute('UPDATE users SET eco_points = eco_points + ? WHERE id = ?', (points_earned, user_id))
+
     conn.commit()
     conn.close()
 
@@ -414,7 +423,7 @@ def calculate(user_data):
 # =========================
 # HISTORY
 # =========================
-@app.route('/history', methods=['GET'])
+@app.route('/api/history', methods=['GET'])
 @token_required
 def get_history(user_data):
 
@@ -443,7 +452,7 @@ def get_history(user_data):
 # =========================
 # LEADERBOARD
 # =========================
-@app.route('/leaderboard', methods=['GET'])
+@app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     conn = get_db()
     # Sort by eco_points descending
@@ -456,7 +465,8 @@ def get_leaderboard():
 # =========================
 # NEWS FEED
 # =========================
-@app.route('/news', methods=['GET'])
+@app.route('/api/news', methods=['GET'])
+@functools.lru_cache(maxsize=32)
 def get_news():
     news = [
         {"id": 1, "title": "Global Solar Power Capacity Hits New Record", "source": "EcoNews", "desc": "Solar energy adoption is accelerating faster than predicted in 2024."},
@@ -470,7 +480,7 @@ def get_news():
 # =========================
 # USER STATS & POINTS
 # =========================
-@app.route('/user-stats', methods=['GET'])
+@app.route('/api/user-stats', methods=['GET'])
 @token_required
 def get_user_stats(user_data):
     user_id = user_data['user_id']
@@ -479,7 +489,7 @@ def get_user_stats(user_data):
     conn.close()
     return jsonify(dict(user))
 
-@app.route('/claim-points', methods=['POST'])
+@app.route('/api/claim-points', methods=['POST'])
 @token_required
 def claim_points(user_data):
     data = request.json
@@ -495,7 +505,7 @@ def claim_points(user_data):
 # =========================
 # AI CHAT
 # =========================
-@app.route('/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST'])
 @token_required
 def ai_chat(user_data):
     data = request.json
@@ -532,7 +542,7 @@ def ai_chat(user_data):
 # =========================
 # ANALYTICS
 # =========================
-@app.route('/analytics', methods=['GET'])
+@app.route('/api/analytics', methods=['GET'])
 @token_required
 def analytics(user_data):
 

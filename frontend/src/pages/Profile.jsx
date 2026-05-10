@@ -85,8 +85,18 @@ function Profile() {
             <button 
               onClick={logout}
               className="logout-btn"
-              style={{ width: '100%', padding: '12px', fontWeight: '700' }}
+              style={{ 
+                width: '100%', 
+                padding: '14px', 
+                fontWeight: '700', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '10px',
+                borderRadius: 'var(--radius-sm)'
+              }}
             >
+              <i className="bi bi-box-arrow-right" style={{ fontSize: '1.2rem' }}></i>
               {t.logout}
             </button>
           </div>

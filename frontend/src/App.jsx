@@ -1,28 +1,34 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import Calculator from './pages/Calculator'
-import Dashboard from './pages/Dashboard'
-import Leaderboard from './pages/Leaderboard'
-import ChatBot from './pages/ChatBot'
-import LoginPage from './pages/LoginPage'
-import SignupPage from './pages/SignupPage'
-import Navbar from './components/Navbar'
-import FloatingChat from './components/FloatingChat'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+import Navbar from './components/Navbar'
+import FloatingChat from './components/FloatingChat'
 import { translations } from './translations'
 
 export const AuthContext = createContext()
 export const ThemeContext = createContext()
 export const LanguageContext = createContext()
 
-import Profile from './pages/Profile'
+// Dynamic Imports for Code Splitting
+const Calculator = lazy(() => import('./pages/Calculator'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Leaderboard = lazy(() => import('./pages/Leaderboard'))
+const ChatBot = lazy(() => import('./pages/ChatBot'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const SignupPage = lazy(() => import('./pages/SignupPage'))
+const Profile = lazy(() => import('./pages/Profile'))
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 
-import LandingPage from './pages/LandingPage'
-
-import ForgotPassword from './pages/ForgotPassword'
+// Smooth Loading Fallback
+const LoadingFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'transparent' }}>
+    <div style={{ width: '40px', height: '40px', border: '3px solid var(--card-border)', borderTop: '3px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+  </div>
+)
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -39,17 +45,19 @@ const AnimatedRoutes = ({ user }) => {
   const location = useLocation()
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
-        <Route path="/login" element={!user ? <PageWrapper><LoginPage /></PageWrapper> : <Navigate to="/dashboard" />} />
-        <Route path="/signup" element={!user ? <PageWrapper><SignupPage /></PageWrapper> : <Navigate to="/dashboard" />} />
-        <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
-        <Route path="/calculator" element={user ? <PageWrapper><Calculator /></PageWrapper> : <Navigate to="/login" />} />
-        <Route path="/dashboard" element={user ? <PageWrapper><Dashboard /></PageWrapper> : <Navigate to="/login" />} />
-        <Route path="/leaderboard" element={user ? <PageWrapper><Leaderboard /></PageWrapper> : <Navigate to="/login" />} />
-        <Route path="/chatbot" element={user ? <PageWrapper><ChatBot /></PageWrapper> : <Navigate to="/login" />} />
-        <Route path="/profile" element={user ? <PageWrapper><Profile /></PageWrapper> : <Navigate to="/login" />} />
-      </Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
+          <Route path="/login" element={!user ? <PageWrapper><LoginPage /></PageWrapper> : <Navigate to="/dashboard" />} />
+          <Route path="/signup" element={!user ? <PageWrapper><SignupPage /></PageWrapper> : <Navigate to="/dashboard" />} />
+          <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
+          <Route path="/calculator" element={user ? <PageWrapper><Calculator /></PageWrapper> : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={user ? <PageWrapper><Dashboard /></PageWrapper> : <Navigate to="/login" />} />
+          <Route path="/leaderboard" element={user ? <PageWrapper><Leaderboard /></PageWrapper> : <Navigate to="/login" />} />
+          <Route path="/chatbot" element={user ? <PageWrapper><ChatBot /></PageWrapper> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <PageWrapper><Profile /></PageWrapper> : <Navigate to="/login" />} />
+        </Routes>
+      </Suspense>
     </AnimatePresence>
   )
 }
