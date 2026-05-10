@@ -5,6 +5,6 @@ numpy
 scikit-learn
 PyJWT
 werkzeug
-google-generativeai
+google-genai
 gunicorn
 python-dotenv

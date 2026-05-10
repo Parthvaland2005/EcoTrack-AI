@@ -6,8 +6,7 @@ from carbon_model import predict_emission
 from database import init_db, get_db
 from auth import register_user, login_user, verify_token, reset_password
 import functools
-import google.generativeai as genai
-
+from google import genai
 
 import os
 from flask import Flask, request, jsonify, send_from_directory
@@ -16,8 +15,7 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Configure Gemini AI
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', "AIzaSyCHtT9TIcRG1ocehahD0keCbAHql7HYuiQ")
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Gemini Configuration
 generation_config = {
@@ -529,10 +527,10 @@ def ai_chat(user_data):
         context = f"\n\n[USER CONTEXT: Here is the user's recent footprint history: {', '.join(log_list)}. Use this to give personalized advice if relevant.]"
 
     try:
-        chat_session = model.start_chat(
-          history=[]
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=system_instruction + context + "\n\nUser Message: " + message
         )
-        response = chat_session.send_message(system_instruction + context + "\n\nUser Message: " + message)
         return jsonify({"reply": response.text})
     except Exception as e:
         print(f"Gemini Error: {e}")
