@@ -513,6 +513,8 @@ def claim_points(user_data):
 def ai_chat(user_data):
     data = request.json
     message = data.get('message', '')
+    history = data.get('history', []) 
+    language = data.get('language', 'en')
     user_id = user_data['user_id']
 
     if not message:
@@ -529,18 +531,31 @@ def ai_chat(user_data):
     context = ""
     if recent_logs:
         log_list = [f"{l['created_at']}: {l['total_emission']}kg ({l['eco_badge']})" for l in recent_logs]
-        context = f"\n\n[USER CONTEXT: Here is the user's recent footprint history: {', '.join(log_list)}. Use this to give personalized advice if relevant.]"
+        context = f"\n\n[USER PERSONAL DATA: Recent footprint history: {', '.join(log_list)}.]"
+
+    lang_instruction = f"\n\n[IMPORTANT: The user's preferred language is {language}. Please respond primarily in {language} unless asked otherwise.]"
 
     try:
+        # Combine everything for the final prompt
+        full_prompt = system_instruction + context + lang_instruction + "\n\nUser Message: " + message
+        
+        # Prepare contents with history
+        contents = []
+        for h in history[-6:]: # Last 6 messages
+            contents.append({"role": h["from"] == "user" and "user" or "model", "parts": [{"text": h["text"]}]})
+        
+        # Add current message
+        contents.append({"role": "user", "parts": [{"text": full_prompt}]})
+
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=system_instruction + context + "\n\nUser Message: " + message,
+            model='gemini-2.0-flash-lite',
+            contents=contents,
             config=generation_config
         )
         return jsonify({"reply": response.text})
     except Exception as e:
         print(f"Gemini Error: {e}")
-        return jsonify({"reply": "Sorry, my AI brain is currently resting. Please try again later.", "error": str(e)}), 500
+        return jsonify({"reply": "Sorry, my AI brain is currently resting.", "error": str(e)}), 500
 
 
 # =========================
