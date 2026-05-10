@@ -1,9 +1,8 @@
 # Node
 node_modules/
 dist/
+dev-dist/
 .env
-backend/.env
-frontend/.env
 
 # Python
 __pycache__/
@@ -11,6 +10,8 @@ __pycache__/
 venv/
 .venv
 ecotrack.db
+*.db
+*.sqlite
 
 # OS
 .DS_Store

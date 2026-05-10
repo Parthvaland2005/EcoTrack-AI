@@ -1,5 +1,9 @@
 # pyrefly: ignore [missing-import]
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from carbon_model import predict_emission
@@ -8,24 +12,19 @@ from auth import register_user, login_user, verify_token, reset_password
 import functools
 from google import genai
 from google.genai import types
-import os
-from dotenv import load_dotenv
-
-# Load Environment Variables
-load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Configure Gemini AI
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', "AIzaSyCHtT9TIcRG1ocehahD0keCbAHql7HYuiQ")
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# AI Generation Configuration
+# AI Generation Config
 generation_config = types.GenerateContentConfig(
     temperature=0.7,
     top_p=0.95,
     top_k=64,
-    max_output_tokens=1024,
+    max_output_tokens=1000,
 )
 
 system_instruction = "You are EcoTrack AI, a brilliant and friendly assistant. While your expertise is in sustainability and carbon footprint reduction, you can answer any question politely. Always try to relate general topics back to environmental impact if possible. Keep answers concise and use emojis! 🌿✨"
